@@ -66,6 +66,7 @@ func (h *classHandler) JoinClass(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	
 	classCode := chi.URLParam(r, "classCode")
 	err = h.classSvc.JoinClass(r.Context(), token.Subject(), classCode)
 	if err != nil {

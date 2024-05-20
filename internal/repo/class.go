@@ -108,28 +108,31 @@ func (r *classRepo) JoinClass(ctx context.Context, userID string, classCode stri
 		userTasks = append(userTasks, uTask)
 	}
 
-	queryTask := "INSERT INTO user_tasks (user_id, task_id, status) VALUES "
-	values := make([]interface{}, 0)
-	placeholders := make([]string, 0)
+	if len(userTasks) != 0 {
+		queryTask := "INSERT INTO user_tasks (user_id, task_id, status) VALUES "
+		values := make([]interface{}, 0)
+		placeholders := make([]string, 0)
 
-	for i, uTask := range userTasks {
-		placeholder := fmt.Sprintf("($%d, $%d, $%d)", i*3+1, i*3+2, i*3+3)
-		placeholders = append(placeholders, placeholder)
-		values = append(values, uTask.UserID, uTask.TaskID, uTask.Status)
-	}
-
-	queryTask += strings.Join(placeholders, ",")
-	_, err = r.conn.Exec(ctx, queryTask, values...)
-	if err != nil {
-		if err.Error() == "no rows in result set" {
-			return ierr.ErrNotFound
+		for i, uTask := range userTasks {
+			placeholder := fmt.Sprintf("($%d, $%d, $%d)", i*3+1, i*3+2, i*3+3)
+			placeholders = append(placeholders, placeholder)
+			values = append(values, uTask.UserID, uTask.TaskID, uTask.Status)
 		}
-		if pgErr, ok := err.(*pgconn.PgError); ok {
-			if pgErr.Code == "22P02" {
+
+		queryTask += strings.Join(placeholders, ",")
+
+		_, err = r.conn.Exec(ctx, queryTask, values...)
+		if err != nil {
+			if err.Error() == "no rows in result set" {
 				return ierr.ErrNotFound
 			}
+			if pgErr, ok := err.(*pgconn.PgError); ok {
+				if pgErr.Code == "22P02" {
+					return ierr.ErrNotFound
+				}
+			}
+			return err
 		}
-		return err
 	}
 
 	return nil
